@@ -7,4 +7,4 @@ class LoginPage(BasePage):
 
     def goto_account_login_page(self):
         self.click_element(self.password_login_lab)
-        return AccountLoginPage
+        return AccountLoginPage()

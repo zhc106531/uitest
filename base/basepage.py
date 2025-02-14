@@ -1,3 +1,5 @@
+import time
+
 import uiautomator2 as u2
 
 class BasePage:
@@ -12,6 +14,7 @@ class BasePage:
     def click_element(self, xpath):
         """点击元素"""
         self.d.xpath(xpath).click()
+        time.sleep(0.5)
 
     def input_text(self, xpath, text):
         """输入文本"""
@@ -34,6 +37,16 @@ class BasePage:
     def long_click_element(self, xpath):
         """长按元素"""
         self.d.xpath(xpath).long_click()
+
+    def is_element_exists(self, xpath):
+        """判断元素是否存在"""
+        element = self.d.xpath(xpath)
+        return element.exists
+
+    def click_if_element_exists(self, xpath):
+        """如果元素存在就点击"""
+        if self.is_element_exists(xpath):
+            self.click_element(xpath)
 
     def drag_element(self, from_xpath, to_xpath):
         """拖动元素"""
@@ -81,29 +94,61 @@ class BasePage:
         }
 
         if key_name in key_map:
-            self.device.keyevent(key_map[key_name])
+            self.d.keyevent(key_map[key_name])
         else:
             raise ValueError(f"不支持的按键名称: {key_name}")
+        time.sleep(0.2)
 
-    def is_element_selected(self, xpath):
-        """判断元素是否处于选中状态"""
+    def double_click_element(self, xpath,t = 0.2):
+        """双击元素"""
         element = self.d.xpath(xpath)
-        if element.exists:
-            # 获取元素的selected属性
-            selected = element.get().get('selected')
-            return selected
-        else:
-            raise ValueError(f"Element with XPath '{xpath}' not found")
+        # 获取元素的边界信息
+        element.click()
+        time.sleep(t)
+        element.click()
+        time.sleep(0.5)
 
-    def select_element_if_not_selected(self, xpath):
-        """如果元素未被选中，则点击选中它"""
-        if not self.is_element_selected(xpath):
-            self.click_element(xpath)
+    def is_toast_exists(self, text, timeout=2):
+        """检测toast是否存在
+        :param text: toast的文本内容
+        :param timeout: 超时时间，默认为20秒
+        :return: 如果toast存在返回True，否则返回False
+        """
+        start_time = time.time()
+        timeout = float(timeout)  # 确保timeout是浮点数
+        while time.time() - start_time < timeout:
+            try:
+                toast_text = self.d.toast.get_message()  # 获取toast消息
+                print("获取到toast：",toast_text)
+                if text in toast_text:
+                    return True
+            except Exception as e:
+                # 捕获异常，可能是toast还未出现
+                pass
+            time.sleep(0.5)  # 每隔0.5秒尝试一次
+        print(f"获取toast超时，未找到包含 '{text}' 的toast")
+        return False
 
-    def deselect_element_if_selected(self, xpath):
-        """如果元素已被选中，则点击取消选中它"""
-        if self.is_element_selected(xpath):
-            self.click_element(xpath)
+    def click_coordinates(self, x, y):
+        """点击指定坐标
+        :param x: x坐标
+        :param y: y坐标
+        """
+        self.d.click(x, y)
+
+    def click_percentage_coordinates(self, x_percentage, y_percentage):
+        """
+        点击百分比坐标
+        :param x_percentage: x坐标的百分比，范围0-100
+        :param y_percentage: y坐标的百分比，范围0-100
+        """
+        # 获取设备屏幕的宽高
+        width, height = self.d.window_size()
+        # 计算实际的坐标
+        x = int(width * x_percentage / 100)
+        y = int(height * y_percentage / 100)
+        # 点击计算后的坐标
+        self.d.click(x, y)
 
 if __name__ == '__main__':
     d = BasePage()
